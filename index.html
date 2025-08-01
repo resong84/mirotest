@@ -559,16 +559,24 @@
         <div class="start-screen-content">
             <h2>미로 찾기 게임</h2>
             <div class="maze-size-input-group">
-                <label for="mazeWidthInput">미로 크기 설정:</label>
-                <div class="maze-size-input">
-                    <input type="number" id="mazeWidthInput" value="11" min="11" max="55">
-                    <span>x</span>
-                    <input type="number" id="mazeHeightInput" value="11" min="11" max="70">
+                <label>미로 크기 선택:</label>
+                <div id="ageButtonsContainer" class="flex gap-2 flex-wrap justify-center">
+                    <button class="action-button age-button" data-size="33">5세: 33x33</button>
+                    <button class="action-button age-button" data-size="45">6세: 45x45</button>
+                    <button class="action-button age-button" data-size="57">7세: 57x57</button>
+                    <button id="customSizeBtn" class="action-button">직접 설정</button>
                 </div>
-                <p class="size-limit-text">가로 길이는 11~55, 세로 길이는 11~70의 홀수여야 합니다.<br>짝수 입력 시 +1 됩니다.</p>
-                <p id="sizeError" class="start-screen-error">유효하지 않은 크기입니다. 홀수 11~55 (가로), 11~70 (세로) 범위로 입력해주세요.</p>
             </div>
-            <button id="startButton" class="start-button">게임 시작</button>
+            <div id="customSizeContainer" class="maze-size-input-group hidden">
+                <label for="mazeWidthSelect">직접 설정 (가로 x 세로):</label>
+                <div class="maze-size-input">
+                    <select id="mazeWidthSelect"></select>
+                    <span>x</span>
+                    <select id="mazeHeightSelect"></select>
+                </div>
+                <p class="size-limit-text">크기: 33 ~ 117</p>
+                <button id="startButton" class="start-button">게임 시작</button>
+            </div>
         </div>
     </div>
 
@@ -598,7 +606,8 @@
                     </div>
 
                     <!-- Directional Buttons -->
-                    <div class="directional-row top-row">
+                    <div class="directional-controls">
+                        <div class="directional-row top-row">
                             <button id="qButton" class="game-button-base special-action-button">Q</button>
                             <button id="up" class="game-button-base arrow-button">⬆️</button>
                             <button id="eButton" class="game-button-base special-action-button">E</button>
@@ -645,9 +654,9 @@
                 <strong>조작법:</strong><br>
                 - <strong>이동:</strong> 키보드의 화살표 키(⬆️⬇️⬅️➡️) 또는 WASD 키(W:위, A:왼쪽, S:아래, D:오른쪽)를 사용하거나 화면의 방향키 버튼을 클릭하세요. 버튼을 누르고 있으면 연속 이동합니다.<br>
                 - <strong>Q 버튼:</strong> 시작 지점으로 즉시 이동합니다. 게임당 1회만 사용 가능합니다.<br>
-                - <strong>E 버튼:</b> 지나온 최근 200칸의 블록을 랜덤 색상으로 표시합니다. 게임당 1회만 사용 가능하며, 0.5초마다 한 칸씩 사라집니다.<br>
+                - <strong>E 버튼:</strong> 지나온 최근 200칸의 블록을 랜덤 색상으로 표시합니다. 게임당 1회만 사용 가능하며, 0.5초마다 한 칸씩 사라집니다.<br>
                 - <strong>시간:</strong> 하단의 타이머가 미로를 탈출하는 데 걸린 시간을 측정합니다.<br><br>
-                <strong>롤백 기능:</b><br>
+                <strong>롤백 기능:</strong><br>
                 - <strong>저장/이동:</strong> 1, 2, 3, 4번 롤백 버튼을 클릭하여 현재 위치를 저장하거나, 저장된 위치로 이동할 수 있습니다.<br>
                 - <strong>저장 해제:</strong> 저장된 위치로 이동하면 해당 롤백 위치는 자동으로 해제됩니다.<br><br>
                 <strong>게임 관리:</strong><br>
@@ -688,11 +697,62 @@
 
         // 시작 화면 요소
         const startScreenModal = document.getElementById('startScreenModal');
-        const mazeWidthInput = document.getElementById('mazeWidthInput');
-        const mazeHeightInput = document.getElementById('mazeHeightInput');
+        const mainLayout = document.querySelector('.main-layout');
+        const ageButtonsContainer = document.getElementById('ageButtonsContainer');
+        const customSizeBtn = document.getElementById('customSizeBtn');
+        const customSizeContainer = document.getElementById('customSizeContainer');
+        const mazeWidthSelect = document.getElementById('mazeWidthSelect');
+        const mazeHeightSelect = document.getElementById('mazeHeightSelect');
         const startButton = document.getElementById('startButton');
-        const sizeError = document.getElementById('sizeError');
-        const mainLayout = document.querySelector('.main-layout'); // Renamed from gameContainer
+
+        // --- New function to populate dropdowns ---
+        function populateSizeDropdowns() {
+            mazeWidthSelect.innerHTML = '';
+            mazeHeightSelect.innerHTML = '';
+            const sizes = [33, 45, 57, 69, 81, 93, 105, 117];
+            sizes.forEach(size => {
+                const optionWidth = document.createElement('option');
+                optionWidth.value = size;
+                optionWidth.textContent = `${size}`;
+                mazeWidthSelect.appendChild(optionWidth);
+
+                const optionHeight = document.createElement('option');
+                optionHeight.value = size;
+                optionHeight.textContent = `${size}`;
+                mazeHeightSelect.appendChild(optionHeight);
+            });
+        }
+
+        // --- New function to start the game with specific dimensions ---
+        function startGameWithSize(width, height) {
+            MAZE_WIDTH = width;
+            MAZE_HEIGHT = height;
+
+            startScreenModal.style.display = 'none';
+            mainLayout.style.display = 'flex';
+            initGame();
+        }
+
+        // Event listener for age buttons
+        ageButtonsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('age-button')) {
+                const size = parseInt(e.target.dataset.size);
+                startGameWithSize(size, size);
+            }
+        });
+
+        // Event listener for "직접 설정" button
+        customSizeBtn.addEventListener('click', () => {
+            ageButtonsContainer.parentElement.classList.add('hidden'); // Hide age buttons group
+            customSizeContainer.classList.remove('hidden'); // Show custom size selectors
+        });
+
+        // Event listener for the main start button (now for custom sizes)
+        startButton.addEventListener('click', () => {
+            const width = parseInt(mazeWidthSelect.value);
+            const height = parseInt(mazeHeightSelect.value);
+            startGameWithSize(width, height);
+        });
 
         // 롤백 버튼 (좌측)
         const rollback1_left = document.getElementById('rollback1_left');
@@ -742,6 +802,13 @@
         const MAX_PLAYER_PATH = 200; // Changed from 80 to 200
         let eButtonClearInterval = null; // Interval for clearing E button path
         let eButtonPathColor = ''; // Random color for E button path
+
+        // Animation variables
+        let animationFrameId;
+        let flagYOffset = 0;
+        let flagAnimationTime = 0;
+        const flagFrames = ['🚩']; // Red and Blue flags
+        const playerSprite = '🐎'; // Player character sprite
 
         // Rollback feature saved positions
         let savedPositions = {
@@ -904,8 +971,8 @@
 
         // Function to initialize canvas size based on maze dimensions and available space
         function initializeCanvasSize() {
-            const minTileSize = 10; // Minimum readable tile size
-            const maxTileSize = 30; // Maximum comfortable tile size
+            const minTileSize = 5; // Minimum readable tile size
+            const maxTileSize = 15; // Maximum comfortable tile size
 
             const headerElement = document.querySelector('.game-header');
             if (!headerElement) {
@@ -934,128 +1001,139 @@
 
         // Function to generate the maze (Recursive Backtracker algorithm)
         function generateMaze() {
+            const pathSize = 3;
+            const wallSize = 1;
+            const step = pathSize + wallSize; // 4
+
             // Initialize all cells as walls (1 is wall)
             maze = Array(MAZE_HEIGHT).fill(0).map(() => Array(MAZE_WIDTH).fill(1));
 
-            let visited = Array(MAZE_HEIGHT).fill(0).map(() => Array(MAZE_WIDTH).fill(false));
+            const metaWidth = Math.floor((MAZE_WIDTH - wallSize) / step);
+            const metaHeight = Math.floor((MAZE_HEIGHT - wallSize) / step);
+
+            if (metaWidth <= 0 || metaHeight <= 0) {
+                console.error("Maze size is too small for this structure.");
+                maze = Array(MAZE_HEIGHT).fill(0).map(() => Array(MAZE_WIDTH).fill(0));
+                placeStartEnd();
+                return;
+            }
+
+            let metaVisited = Array(metaHeight).fill(0).map(() => Array(metaWidth).fill(false));
             let stack = [];
 
-            // Start from a random odd cell (to ensure it's a path)
-            let startX = Math.floor(Math.random() * ((MAZE_WIDTH - 1) / 2)) * 2 + 1;
-            let startY = Math.floor(Math.random() * ((MAZE_HEIGHT - 1) / 2)) * 2 + 1;
+            let startMetaX = Math.floor(Math.random() * metaWidth);
+            let startMetaY = Math.floor(Math.random() * metaHeight);
 
-            // Ensure startX, startY are within bounds for odd dimensions
-            if (startX < 1) startX = 1;
-            if (startY < 1) startY = 1;
-            if (startX >= MAZE_WIDTH - 1) startX = MAZE_WIDTH - 2;
-            if (startY >= MAZE_HEIGHT - 1) startY = MAZE_HEIGHT - 2;
-
-
-            stack.push({ x: startX, y: startY });
-            visited[startY][startX] = true;
-            maze[startY][startX] = 0; // Mark as path
+            stack.push({ x: startMetaX, y: startMetaY });
+            metaVisited[startMetaY][startMetaX] = true;
+            
+            // Carve the first 3x3 cell
+            let startX = wallSize + startMetaX * step;
+            let startY = wallSize + startMetaY * step;
+            for (let r = 0; r < pathSize; r++) {
+                for (let c = 0; c < pathSize; c++) {
+                    if (startY + r < MAZE_HEIGHT && startX + c < MAZE_WIDTH) {
+                        maze[startY + r][startX + c] = 0;
+                    }
+                }
+            }
 
             while (stack.length > 0) {
-                let current = stack[stack.length - 1]; // Peek at the top of the stack
+                let current = stack[stack.length - 1];
 
                 let neighbors = [];
-                // Check unvisited neighbors (2 cells away, to break walls between cells)
-                // Up
-                if (current.y - 2 >= 0 && !visited[current.y - 2][current.x]) {
-                    neighbors.push({ x: current.x, y: current.y - 2, wallX: current.x, wallY: current.y - 1 });
-                }
-                // Down
-                if (current.y + 2 < MAZE_HEIGHT && !visited[current.y + 2][current.x]) {
-                    neighbors.push({ x: current.x, y: current.y + 2, wallX: current.x, wallY: current.y + 1 });
-                }
-                // Left
-                if (current.x - 2 >= 0 && !visited[current.y][current.x - 2]) {
-                    neighbors.push({ x: current.x - 2, y: current.y, wallX: current.x - 1, wallY: current.y });
-                }
-                // Right
-                if (current.x + 2 < MAZE_WIDTH && !visited[current.y][current.x + 2]) {
-                    neighbors.push({ x: current.x + 2, y: current.y, wallX: current.x + 1, wallY: current.y });
-                }
+                if (current.y > 0 && !metaVisited[current.y - 1][current.x]) neighbors.push({ x: current.x, y: current.y - 1, dir: 'N' });
+                if (current.y < metaHeight - 1 && !metaVisited[current.y + 1][current.x]) neighbors.push({ x: current.x, y: current.y + 1, dir: 'S' });
+                if (current.x > 0 && !metaVisited[current.y][current.x - 1]) neighbors.push({ x: current.x - 1, y: current.y, dir: 'W' });
+                if (current.x < metaWidth - 1 && !metaVisited[current.y][current.x + 1]) neighbors.push({ x: current.x + 1, y: current.y, dir: 'E' });
 
                 if (neighbors.length > 0) {
-                    // Choose a random neighbor
                     let next = neighbors[Math.floor(Math.random() * neighbors.length)];
 
-                    // Remove the wall between the current cell and the next cell
-                    maze[next.wallY][next.wallX] = 0;
-                    maze[next.y][next.x] = 0; // Mark next cell as path
-                    visited[next.y][next.x] = true;
-                    stack.push({ x: next.x, y: next.y });
+                    let currentX = wallSize + current.x * step;
+                    let currentY = wallSize + current.y * step;
+
+                    // Carve the wall between current and next
+                    if (next.dir === 'N') {
+                        for(let i = 0; i < pathSize; i++) maze[currentY - 1][currentX + i] = 0;
+                    } else if (next.dir === 'S') {
+                        for(let i = 0; i < pathSize; i++) maze[currentY + pathSize][currentX + i] = 0;
+                    } else if (next.dir === 'W') {
+                        for(let i = 0; i < pathSize; i++) maze[currentY + i][currentX - 1] = 0;
+                    } else if (next.dir === 'E') {
+                        for(let i = 0; i < pathSize; i++) maze[currentY + i][currentX + pathSize] = 0;
+                    }
+                    
+                    // Carve the 3x3 block for the next cell
+                    let nextX = wallSize + next.x * step;
+                    let nextY = wallSize + next.y * step;
+                     for (let r = 0; r < pathSize; r++) {
+                        for (let c = 0; c < pathSize; c++) {
+                             if (nextY + r < MAZE_HEIGHT && nextX + c < MAZE_WIDTH) {
+                                maze[nextY + r][nextX + c] = 0;
+                            }
+                        }
+                    }
+
+                    metaVisited[next.y][next.x] = true;
+                    stack.push(next);
                 } else {
-                    stack.pop(); // Backtrack
+                    stack.pop();
                 }
             }
-
-            // Ensure outer border is walls
-            for (let i = 0; i < MAZE_HEIGHT; i++) {
-                maze[i][0] = 1;
-                maze[i][MAZE_WIDTH - 1] = 1;
-            }
-            for (let j = 0; j < MAZE_WIDTH; j++) {
-                maze[0][j] = 1;
-                maze[MAZE_HEIGHT - 1][j] = 1;
-            }
-
-            // Place start and end points
             placeStartEnd();
         }
 
         // Function to randomly place start and end points on paths
         function placeStartEnd() {
             let pathCells = [];
-            for (let r = 0; r < MAZE_HEIGHT; r++) {
-                for (let c = 0; c < MAZE_WIDTH; c++) {
-                    if (maze[r][c] === 0) {
-                        pathCells.push({ x: c, y: r });
+            const pathSize = 3;
+            const wallSize = 1;
+            const step = pathSize + wallSize; // 4
+            const pathCenterOffset = Math.floor(pathSize / 2);
+
+            const metaWidth = Math.floor((MAZE_WIDTH - wallSize) / step);
+            const metaHeight = Math.floor((MAZE_HEIGHT - wallSize) / step);
+
+            for (let my = 0; my < metaHeight; my++) {
+                for (let mx = 0; mx < metaWidth; mx++) {
+                    const centerX = wallSize + mx * step + pathCenterOffset;
+                    const centerY = wallSize + my * step + pathCenterOffset;
+
+                    if (maze[centerY]?.[centerX] === 0) {
+                        pathCells.push({ x: centerX, y: centerY });
                     }
                 }
             }
 
-            // Select start position randomly from path cells
+            if (pathCells.length < 2) {
+                console.error("Cannot place start/end, not enough center path cells found. Falling back to any path cell.");
+                 // Fallback to any path cell if center cells are not found
+                 for (let r = 0; r < MAZE_HEIGHT; r++) {
+                    for (let c = 0; c < MAZE_WIDTH; c++) {
+                        if (maze[r][c] === 0) {
+                            pathCells.push({ x: c, y: r });
+                        }
+                    }
+                }
+                 if (pathCells.length < 2) { // If still not enough, hardcode
+                    startPos = { x: 1 + pathCenterOffset, y: 1 + pathCenterOffset };
+                    endPos = { x: MAZE_WIDTH - 2 - pathCenterOffset, y: MAZE_HEIGHT - 2 - pathCenterOffset };
+                    player = { ...startPos };
+                    return;
+                }
+            }
+
             let startIndex = Math.floor(Math.random() * pathCells.length);
             startPos = pathCells[startIndex];
-            player = { x: startPos.x, y: startPos.y };
-            playerPath = [{ x: player.x, y: player.y }]; // Initialize player path
+            player = { ...startPos };
+            playerPath = [{ ...player }];
 
-            // Select end position randomly (different from start and meeting distance criteria)
             let endIndex;
-            let distanceConditionMet = false;
-            // Calculate minDistance: (width * height) / ((width + height) / 2)
-            const minDistance = (MAZE_WIDTH * MAZE_HEIGHT) / ((MAZE_WIDTH + MAZE_HEIGHT) / 2);
-            let retryCount = 0;
-            const MAX_RETRIES = 1000; // Prevent infinite loop
-
-            while (!distanceConditionMet && retryCount < MAX_RETRIES) {
+            do {
                 endIndex = Math.floor(Math.random() * pathCells.length);
-                if (endIndex === startIndex) { // Ensure start and end are different
-                    retryCount++;
-                    continue;
-                }
-
-                const tempEndPos = pathCells[endIndex];
-                // Calculate Manhattan distance
-                const currentDistance = Math.abs(startPos.x - tempEndPos.x) + Math.abs(startPos.y - tempEndPos.y);
-
-                if (currentDistance > minDistance) {
-                    endPos = tempEndPos;
-                    distanceConditionMet = true;
-                }
-                retryCount++;
-            }
-
-            // Fallback if a sufficiently distant end point is not found after many retries
-            if (!distanceConditionMet) {
-                do {
-                    endIndex = Math.floor(Math.random() * pathCells.length);
-                } while (endIndex === startIndex);
-                endPos = pathCells[endIndex];
-                console.warn("Could not find a sufficiently distant end point, selecting another random point.");
-            }
+            } while (endIndex === startIndex);
+            endPos = pathCells[endIndex];
         }
 
         // Function to draw the maze, player, start, and end points
@@ -1067,19 +1145,17 @@
                     const x = c * TILE_SIZE;
                     const y = r * TILE_SIZE;
 
-                    // Draw path (white) or wall (dark gray)
                     if (maze[r][c] === 0) {
-                        ctx.fillStyle = '#FFFFFF'; // White for path
-                    } else if (maze[r][c] === 1) {
-                        ctx.fillStyle = '#555555'; // Dark gray for walls
+                        ctx.fillStyle = '#FFFFFF';
+                    } else {
+                        ctx.fillStyle = '#555555';
                     }
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                 }
             }
 
-            // Draw E button path if used
             if (eButtonUsed && playerPath.length > 0) {
-                ctx.fillStyle = eButtonPathColor; // Use the random color
+                ctx.fillStyle = eButtonPathColor;
                 for (let i = 0; i < playerPath.length; i++) {
                     const pathX = playerPath[i].x * TILE_SIZE;
                     const pathY = playerPath[i].y * TILE_SIZE;
@@ -1087,60 +1163,43 @@
                 }
             }
 
-            // Draw start point marker (small circle)
-            ctx.fillStyle = '#4CAF50'; // Green dot for start
+            ctx.fillStyle = '#4CAF50';
             ctx.beginPath();
-            ctx.arc(startPos.x * TILE_SIZE + TILE_SIZE / 2, startPos.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE / 4, 0, Math.PI * 2);
+            ctx.arc(startPos.x * TILE_SIZE + TILE_SIZE / 2, startPos.y * TILE_SIZE + TILE_SIZE / 2, (TILE_SIZE / 4) * 3, 0, Math.PI * 2);
             ctx.fill();
-            ctx.font = `${TILE_SIZE * 0.4}px Arial`;
+            ctx.font = `${TILE_SIZE * 0.4 * 3}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = 'white';
             ctx.fillText('●', startPos.x * TILE_SIZE + TILE_SIZE / 2, startPos.y * TILE_SIZE + TILE_SIZE / 2);
 
-
-            // Draw end point marker
-            ctx.font = `${TILE_SIZE * 0.7}px Arial`;
+            ctx.font = `${TILE_SIZE * 0.7 * 3}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('🚩', endPos.x * TILE_SIZE + TILE_SIZE / 2, endPos.y * TILE_SIZE + TILE_SIZE / 2); // Red triangular flag emoji
+            ctx.fillText(flagFrames[0], endPos.x * TILE_SIZE + TILE_SIZE / 2, endPos.y * TILE_SIZE + TILE_SIZE / 2 + flagYOffset);
 
-            // Draw player (at current position)
-            ctx.font = `${TILE_SIZE * 0.8}px Arial`; // Horse emoji size adjustment
+            ctx.font = `${TILE_SIZE * 0.8 * 3}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('🐎', player.x * TILE_SIZE + TILE_SIZE / 2, player.y * TILE_SIZE + TILE_SIZE / 2); // Horse emoji
+            ctx.fillText(playerSprite, player.x * TILE_SIZE + TILE_SIZE / 2, player.y * TILE_SIZE + TILE_SIZE / 2);
 
-
-            // Draw saved positions
             for (const key in savedPositions) {
                 const pos = savedPositions[key];
                 if (pos) {
-                    // Use a slightly transparent background for better visibility of numbers
-                    ctx.fillStyle = 'rgba(128, 128, 128, 0.5)'; // Gray, semi-transparent
+                    ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
                     ctx.beginPath();
-                    ctx.arc(pos.x * TILE_SIZE + TILE_SIZE / 2, pos.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE / 4, 0, Math.PI * 2);
+                    ctx.arc(pos.x * TILE_SIZE + TILE_SIZE / 2, pos.y * TILE_SIZE + TILE_SIZE / 2, (TILE_SIZE / 2.5) * 3, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Apply specific color to number text based on key
                     switch (key) {
-                        case '1':
-                            ctx.fillStyle = 'red';
-                            break;
-                        case '2':
-                            ctx.fillStyle = 'orange';
-                            break;
-                        case '3':
-                            ctx.fillStyle = 'yellow';
-                            break;
-                        case '4':
-                            ctx.fillStyle = 'green';
-                            break;
-                        default:
-                            ctx.fillStyle = 'white'; // Default
+                        case '1': ctx.fillStyle = 'red'; break;
+                        case '2': ctx.fillStyle = 'orange'; break;
+                        case '3': ctx.fillStyle = 'yellow'; break;
+                        case '4': ctx.fillStyle = 'green'; break;
+                        default: ctx.fillStyle = 'white';
                     }
 
-                    ctx.font = `${TILE_SIZE * 0.4}px Arial`;
+                    ctx.font = `${TILE_SIZE * 0.6 * 3}px Arial`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(key, pos.x * TILE_SIZE + TILE_SIZE / 2, pos.y * TILE_SIZE + TILE_SIZE / 2);
@@ -1148,32 +1207,57 @@
             }
         }
 
+        // --- Animation Loop ---
+        function animate() {
+            if (gameWon) {
+                cancelAnimationFrame(animationFrameId);
+                return;
+            }
+
+            const animationSpeed = 0.05;
+            flagAnimationTime += animationSpeed;
+            flagYOffset = Math.sin(flagAnimationTime) * (TILE_SIZE * 0.15);
+
+            drawMaze();
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
         // Function to move the player
         function movePlayer(dx, dy) {
-            if (gameWon) return; // Prevent movement after winning
+            if (gameWon) return;
+            
+            const pathSize = 3;
+            const wallSize = 1;
+            const step = pathSize + wallSize; // 4
+            const pathCenterOffset = Math.floor(pathSize / 2); // 1
 
-            const newX = player.x + dx;
-            const newY = player.y + dy;
+            // Calculate the wall cell to check
+            const wallCheckX = player.x + dx * (pathCenterOffset + wallSize);
+            const wallCheckY = player.y + dy * (pathCenterOffset + wallSize);
 
-            // Check boundaries
-            if (newX >= 0 && newX < MAZE_WIDTH && newY >= 0 && newY < MAZE_HEIGHT) {
-                // Check if the new position is not a wall
-                if (maze[newY][newX] !== 1) {
-                    player.x = newX;
-                    player.y = newY;
-                    
-                    // Add current position to player path ONLY if E button has NOT been used
-                    if (!eButtonUsed) { // Only add to path if E button hasn't been used
-                        playerPath.push({ x: player.x, y: player.y });
-                        if (playerPath.length > MAX_PLAYER_PATH) { // Changed to MAX_PLAYER_PATH
-                            playerPath.shift(); // Keep only the last MAX_PLAYER_PATH positions
-                        }
+            // Check boundaries for the wall cell
+            if (wallCheckX < 0 || wallCheckX >= MAZE_WIDTH || wallCheckY < 0 || wallCheckY >= MAZE_HEIGHT) {
+                return;
+            }
+
+            // Check if the wall cell is a path (i.e., has been carved)
+            if (maze[wallCheckY]?.[wallCheckX] === 0) {
+                const newX = player.x + dx * step;
+                const newY = player.y + dy * step;
+                
+                player.x = newX;
+                player.y = newY;
+
+                if (!eButtonUsed) {
+                    playerPath.push({ x: player.x, y: player.y });
+                    if (playerPath.length > MAX_PLAYER_PATH) {
+                        playerPath.shift();
                     }
-
-                    drawMaze();
-                    checkWin();
-                    playRunningSound(); // Play sound on player movement
                 }
+
+                drawMaze();
+                checkWin();
+                playRunningSound();
             }
         }
 
@@ -1182,14 +1266,14 @@
             const elapsedTimeMs = Date.now() - startTime;
             const minutes = String(Math.floor(elapsedTimeMs / 60000)).padStart(2, '0');
             const seconds = String(Math.floor((elapsedTimeMs % 60000) / 1000)).padStart(2, '0');
-            const milliseconds = String(Math.floor((elapsedTimeMs % 1000) / 10)).padStart(2, '0'); // Two digits for milliseconds
+            const milliseconds = String(Math.floor((elapsedTimeMs % 1000) / 10)).padStart(2, '0');
             timerDisplay.textContent = `${minutes}분${seconds}초${milliseconds}`;
         }
 
         // Function to start the timer
         function startTimer() {
             startTime = Date.now();
-            timerInterval = setInterval(updateTimerDisplay, 10); // Update every 10ms
+            timerInterval = setInterval(updateTimerDisplay, 10);
         }
 
         // Function to stop the timer
@@ -1228,9 +1312,8 @@
             if (player.x === endPos.x && player.y === endPos.y) {
                 stopTimer();
                 gameWon = true;
-                // Update win message and display win modal
-                winTimeMessage.textContent = `시간: ${timerDisplay.textContent}`; // Update time message
-                winMazeSizeMessage.textContent = `클리어한 미로 크기: ${MAZE_WIDTH} x ${MAZE_HEIGHT}`; // NEW: Update maze size message
+                winTimeMessage.textContent = `시간: ${timerDisplay.textContent}`;
+                winMazeSizeMessage.textContent = `클리어한 미로 크기: ${MAZE_WIDTH} x ${MAZE_HEIGHT}`;
                 winModal.style.display = 'flex';
             }
         }
@@ -1242,42 +1325,37 @@
             const currentPos = { x: player.x, y: player.y };
             const savedPos = savedPositions[key];
 
-            // If current position is same as saved position (to clear it)
             if (savedPos && currentPos.x === savedPos.x && currentPos.y === savedPos.y) {
-                savedPositions[key] = null; // Clear saved position
+                savedPositions[key] = null;
                 showMessage(`${key}번 위치 저장 해제됨.`);
             }
-            // If position is saved (and different from current), move to that position
             else if (savedPos) {
                 player.x = savedPos.x;
                 player.y = savedPos.y;
-                savedPositions[key] = null; // Clear after loading
+                savedPositions[key] = null;
                 showMessage(`${key}번 위치로 이동했습니다. 저장된 위치가 해제되었습니다.`);
-                checkWin(); // Check win condition after movement
+                checkWin();
             }
-            // If no position is saved, save current position
             else {
-                savedPositions[key] = { x: currentPos.x, y: currentPos.y };
+                savedPositions[key] = { ...currentPos };
                 showMessage(`${key}번 위치에 현재 위치를 저장했습니다.`);
             }
-            drawMaze(); // Redraw to update saved position markers
-            playRollbackSound(); // Play sound on rollback
+            drawMaze();
+            playRollbackSound();
         }
 
         // Function to take screenshot and display it
         async function takeScreenshot() {
-            playShutterSound(); // Play shutter sound
-            flashOverlay.classList.add('flash-effect'); // Add flash effect
+            playShutterSound();
+            flashOverlay.classList.add('flash-effect');
             setTimeout(() => {
-                flashOverlay.classList.remove('flash-effect'); // Remove flash effect after animation
-            }, 300); // Match animation duration
+                flashOverlay.classList.remove('flash-effect');
+            }, 300);
 
             try {
-                // Capture the main game layout
                 const canvasElement = await html2canvas(mainLayout);
                 const imageDataUrl = canvasElement.toDataURL('image/png');
 
-                // Attempt to copy to clipboard using modern Clipboard API
                 if (navigator.clipboard && navigator.clipboard.write) {
                     try {
                         const response = await fetch(imageDataUrl);
@@ -1286,9 +1364,8 @@
                         showMessage('스크린샷이 클립보드에 복사되었습니다!', 'info');
                     } catch (clipboardError) {
                         console.error('클립보드 복사 중 오류 발생 (navigator.clipboard.write):', clipboardError);
-                        // Fallback to text copy if image blob copy fails due to permissions
                         const tempInput = document.createElement('textarea');
-                        tempInput.value = imageDataUrl; // Copy the data URL as text
+                        tempInput.value = imageDataUrl;
                         document.body.appendChild(tempInput);
                         tempInput.select();
                         try {
@@ -1302,9 +1379,8 @@
                         }
                     }
                 } else {
-                    // Fallback for browsers that don't support Clipboard API at all
                     const tempInput = document.createElement('textarea');
-                    tempInput.value = imageDataUrl; // Copy the data URL as text
+                    tempInput.value = imageDataUrl;
                     document.body.appendChild(tempInput);
                     tempInput.select();
                     try {
@@ -1318,7 +1394,6 @@
                     }
                 }
 
-                // Always display screenshot in modal
                 screenshotImage.src = imageDataUrl;
                 screenshotModal.style.display = 'flex';
 
@@ -1331,89 +1406,58 @@
 
         // Function to initialize the game
         function initGame() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+
             hideMessage();
-            winModal.style.display = 'none'; // Hide win modal
-            helpModal.style.display = 'none'; // Hide help modal
-            screenshotModal.style.display = 'none'; // Hide screenshot modal
+            winModal.style.display = 'none';
+            helpModal.style.display = 'none';
+            screenshotModal.style.display = 'none';
             gameWon = false;
             
-            // Reset E button usage
             eButtonUsed = false;
             eButton.disabled = false;
             eButton.classList.remove('disabled');
-            // Clear E button path interval if active
             if (eButtonClearInterval) {
                 clearInterval(eButtonClearInterval);
                 eButtonClearInterval = null;
             }
-            eButtonPathColor = getRandomTransparentColor(); // Set a new random color for the E button path
+            eButtonPathColor = getRandomTransparentColor();
 
-            // Reset Q button usage (NEW)
             qButtonUsed = false;
             qButton.disabled = false;
             qButton.classList.remove('disabled');
             
-            stopTimer(); // Clear existing timer
-            timerDisplay.textContent = '00분00초00'; // Reset timer display
-            // Clear all saved positions
+            stopTimer();
+            timerDisplay.textContent = '00분00초00';
             for (let key in savedPositions) {
                 savedPositions[key] = null;
             }
 
-            initializeCanvasSize(); // Calculate TILE_SIZE and set canvas size
-            generateMaze(); // Generate new maze (includes placeStartEnd())
-            playImpactSound(); // Play sound to emphasize player/end point location
-            drawMaze(); // Draw maze (including player/end point)
-            startTimer(); // Start timer
+            initializeCanvasSize();
+            generateMaze();
+            playImpactSound();
+            
+            animate();
+            startTimer();
         }
 
         // Function to show the start screen
         function showStartScreen() {
             startScreenModal.style.display = 'flex';
-            mainLayout.style.display = 'none'; // Hide mainLayout
-            sizeError.style.display = 'none'; // Hide error message initially
-            winModal.style.display = 'none'; // Hide win modal when returning to start screen
-            helpModal.style.display = 'none'; // Hide help modal when returning to start screen
-            screenshotModal.style.display = 'none'; // Hide screenshot modal when returning to start screen
+            mainLayout.style.display = 'none';
+            winModal.style.display = 'none';
+            helpModal.style.display = 'none';
+            screenshotModal.style.display = 'none';
+
+            ageButtonsContainer.parentElement.classList.remove('hidden');
+            customSizeContainer.classList.add('hidden');
         }
 
-        // Event listener for start button click
-        startButton.addEventListener('click', () => {
-            let inputWidth = parseInt(mazeWidthInput.value);
-            let inputHeight = parseInt(mazeHeightInput.value);
-
-            // Validation: must be odd numbers within 11-55 (width), 11-70 (height)
-            if (isNaN(inputWidth) || isNaN(inputHeight) || inputWidth < 11 || inputWidth > 55 || inputHeight < 11 || inputHeight > 70) {
-                sizeError.style.display = 'block';
-                return;
-            }
-
-            // If even, increment by 1
-            if (inputWidth % 2 === 0) {
-                inputWidth += 1;
-            }
-            if (inputHeight % 2 === 0) {
-                inputHeight += 1;
-            }
-
-            // Set the larger value as height (maintaining previous logic)
-            if (inputWidth > inputHeight) {
-                MAZE_WIDTH = inputHeight;
-                MAZE_HEIGHT = inputWidth;
-            } else {
-                MAZE_WIDTH = inputWidth;
-                MAZE_HEIGHT = inputHeight;
-            }
-
-            startScreenModal.style.display = 'none';
-            mainLayout.style.display = 'flex'; // Show mainLayout
-            initGame(); // Start game with new dimensions
-        });
-
-        // Function to start continuous movement (for mouse/touch)
         function startContinuousMove(direction) {
-            if (gameWon || startScreenModal.style.display === 'flex' || helpModal.style.display === 'flex' || screenshotModal.style.display === 'flex') return; // Prevent movement if any modal is active
-            if (moveIntervals[direction]) return; // Prevent duplicate execution if already moving
+            if (gameWon || startScreenModal.style.display === 'flex' || helpModal.style.display === 'flex' || screenshotModal.style.display === 'flex') return;
+            if (moveIntervals[direction]) return;
 
             const moveMap = {
                 'up': () => movePlayer(0, -1),
@@ -1422,11 +1466,8 @@
                 'right': () => movePlayer(1, 0)
             };
 
-            // Move once immediately on mouse down
             moveMap[direction]();
-
-            // Start continuous movement (150ms interval for slower speed)
-            moveIntervals[direction] = setInterval(moveMap[direction], 150); // Adjusted speed here
+            moveIntervals[direction] = setInterval(moveMap[direction], 150);
         }
 
         function stopContinuousMove(direction) {
@@ -1436,87 +1477,62 @@
             }
         }
 
-        // Keyboard input event listener
         document.addEventListener('keydown', (e) => {
-            if (gameWon || startScreenModal.style.display === 'flex' || helpModal.style.display === 'flex' || screenshotModal.style.display === 'flex') return; // Prevent movement if game won or modal is active
+            if (gameWon || startScreenModal.style.display === 'flex' || helpModal.style.display === 'flex' || screenshotModal.style.display === 'flex') return;
 
-            // Handle rollback keys
             if (['1', '2', '3', '4'].includes(e.key)) {
                 saveOrLoadPosition(e.key);
-                return; // Prevent default action for number keys
+                return;
             }
 
-            // Handle Q button (NEW)
             if ((e.key === 'q' || e.key === 'Q') && !qButtonUsed) {
                 qButtonUsed = true;
-                qButton.disabled = true; // Disable the button
-                qButton.classList.add('disabled'); // Add disabled style
+                qButton.disabled = true;
+                qButton.classList.add('disabled');
                 playQButtonSound();
                 player.x = startPos.x;
                 player.y = startPos.y;
-                playerPath = [{ x: player.x, y: player.y }];
+                playerPath = [{ ...player }];
                 drawMaze();
                 showMessage("Q 버튼은 게임당 1회만 사용 가능합니다. 시작 지점으로 돌아왔습니다.");
                 return;
             }
 
-            // Handle E button
             if ((e.key === 'e' || e.key === 'E') && !eButtonUsed) {
                 eButtonUsed = true;
-                eButton.disabled = true; // Disable the button
-                eButton.classList.add('disabled'); // Add disabled style
+                eButton.disabled = true;
+                eButton.classList.add('disabled');
                 playEButtonSound();
-                showMessage(`최근 이동 경로 ${MAX_PLAYER_PATH}칸을 표시합니다. 0.5초마다 사라집니다.`); // Updated message
-                drawMaze(); // Redraw to show path immediately
+                showMessage(`최근 이동 경로 ${MAX_PLAYER_PATH}칸을 표시합니다. 0.5초마다 사라집니다.`);
+                drawMaze();
 
-                // Start clearing path
                 eButtonClearInterval = setInterval(() => {
                     if (playerPath.length > 0) {
-                        playerPath.shift(); // Remove oldest path segment
-                        drawMaze(); // Redraw to reflect removal
+                        playerPath.shift();
+                        drawMaze();
                     } else {
                         clearInterval(eButtonClearInterval);
                         eButtonClearInterval = null;
                         showMessage("이동 경로 표시가 완료되었습니다.", 'info');
                     }
-                }, 500); // Clear every 0.5 seconds
+                }, 500);
 
                 return;
             }
 
-
-            // Handle movement keys (Arrow keys and WASD)
             switch (e.key) {
-                case 'ArrowUp':
-                case 'w':
-                case 'W':
-                    movePlayer(0, -1);
-                    break;
-                case 'ArrowDown':
-                case 's':
-                case 'S':
-                    movePlayer(0, 1);
-                    break;
-                case 'ArrowLeft':
-                case 'a':
-                case 'A':
-                    movePlayer(-1, 0);
-                    break;
-                case 'ArrowRight':
-                case 'd':
-                case 'D':
-                    movePlayer(1, 0);
-                    break;
+                case 'ArrowUp': case 'w': case 'W': movePlayer(0, -1); break;
+                case 'ArrowDown': case 's': case 'S': movePlayer(0, 1); break;
+                case 'ArrowLeft': case 'a': case 'A': movePlayer(-1, 0); break;
+                case 'ArrowRight': case 'd': case 'D': movePlayer(1, 0); break;
             }
         });
 
-        // Mouse click event listeners (directional buttons)
         document.getElementById('up').addEventListener('mousedown', (e) => { e.preventDefault(); startContinuousMove('up'); });
         document.getElementById('down').addEventListener('mousedown', (e) => { e.preventDefault(); startContinuousMove('down'); });
         document.getElementById('left').addEventListener('mousedown', (e) => { e.preventDefault(); startContinuousMove('left'); });
         document.getElementById('right').addEventListener('mousedown', (e) => { e.preventDefault(); startContinuousMove('right'); });
 
-        // Q button click event listener (NEW)
         qButton.addEventListener('click', () => {
             if (gameWon || startScreenModal.style.display === 'flex' || helpModal.style.display === 'flex' || screenshotModal.style.display === 'flex' || qButtonUsed) return;
             qButtonUsed = true;
@@ -1525,7 +1541,7 @@
             playQButtonSound();
             player.x = startPos.x;
             player.y = startPos.y;
-            playerPath = [{ x: player.x, y: player.y }];
+            playerPath = [{ ...player }];
             drawMaze();
             showMessage("Q 버튼은 게임당 1회만 사용 가능합니다. 시작 지점으로 돌아왔습니다.");
         });
@@ -1533,35 +1549,29 @@
         eButton.addEventListener('click', () => {
             if (gameWon || startScreenModal.style.display === 'flex' || helpModal.style.display === 'flex' || screenshotModal.style.display === 'flex' || eButtonUsed) return;
             eButtonUsed = true;
-            eButton.disabled = true; // Disable the button
-            eButton.classList.add('disabled'); // Add disabled style
+            eButton.disabled = true;
+            eButton.classList.add('disabled');
             playEButtonSound();
-            showMessage(`최근 이동 경로 ${MAX_PLAYER_PATH}칸을 표시합니다. 0.5초마다 사라집니다.`); // Updated message
-            drawMaze(); // Redraw to show path immediately
+            showMessage(`최근 이동 경로 ${MAX_PLAYER_PATH}칸을 표시합니다. 0.5초마다 사라집니다.`);
+            drawMaze();
 
-            // Start clearing path
             eButtonClearInterval = setInterval(() => {
                 if (playerPath.length > 0) {
-                    playerPath.shift(); // Remove oldest path segment
-                    drawMaze(); // Redraw to reflect removal
+                    playerPath.shift();
+                    drawMaze();
                 } else {
                     clearInterval(eButtonClearInterval);
                     eButtonClearInterval = null;
                     showMessage("이동 경로 표시가 완료되었습니다.", 'info');
                 }
-            }, 500); // Clear every 0.5 seconds
+            }, 500);
         });
 
-        // Share button click event listener
         shareButton.addEventListener('click', takeScreenshot);
-
-        // Screenshot modal close button event listener
         closeScreenshotModalButton.addEventListener('click', () => {
             screenshotModal.style.display = 'none';
         });
 
-
-        // Stop continuous movement when mouse button is released or leaves button area
         document.addEventListener('mouseup', () => {
             for (const dir in moveIntervals) {
                 stopContinuousMove(dir);
@@ -1572,83 +1582,43 @@
         document.getElementById('down').addEventListener('mouseleave', () => stopContinuousMove('down'));
         document.getElementById('left').addEventListener('mouseleave', () => stopContinuousMove('left'));
         document.getElementById('right').addEventListener('mouseleave', () => stopContinuousMove('right'));
-        qButton.addEventListener('mouseleave', () => stopContinuousMove('q')); // Ensure Q button doesn't trigger continuous move
-        eButton.addEventListener('mouseleave', () => stopContinuousMove('e')); // Ensure E button doesn't trigger continuous move
+        qButton.addEventListener('mouseleave', () => stopContinuousMove('q'));
+        eButton.addEventListener('mouseleave', () => stopContinuousMove('e'));
 
-
-        // Mouse click event listeners (rollback) - Left group
         rollback1_left.addEventListener('click', () => saveOrLoadPosition('1'));
         rollback2_left.addEventListener('click', () => saveOrLoadPosition('2'));
         rollback3_left.addEventListener('click', () => saveOrLoadPosition('3'));
         rollback4_left.addEventListener('click', () => saveOrLoadPosition('4'));
 
-        // Mouse click event listeners (rollback) - Right group
         rollback1_right.addEventListener('click', () => saveOrLoadPosition('1'));
         rollback2_right.addEventListener('click', () => saveOrLoadPosition('2'));
         rollback3_right.addEventListener('click', () => saveOrLoadPosition('3'));
         rollback4_right.addEventListener('click', () => saveOrLoadPosition('4'));
 
-        // Restart button event listener
-        restartButton.addEventListener('click', initGame); // 'Restart' button restarts the game
-
-        // Restart button event listener inside win modal
+        restartButton.addEventListener('click', initGame);
         winRestartButton.addEventListener('click', () => {
-            winModal.style.display = 'none'; // Hide modal
-            initGame(); // Restart game
+            winModal.style.display = 'none';
+            initGame();
         });
 
-        // Reset size button event listener
-        resetSizeButton.addEventListener('click', showStartScreen); // 'Reset Size' button returns to start screen
-
-        // Help button event listener
+        resetSizeButton.addEventListener('click', showStartScreen);
         helpButton.addEventListener('click', () => {
-            helpModal.style.display = 'flex'; // Show help modal
+            helpModal.style.display = 'flex';
         });
-
-        // Help modal close button event listener
         closeHelpModalButton.addEventListener('click', () => {
-            helpModal.style.display = 'none'; // Hide help modal
+            helpModal.style.display = 'none';
         });
 
-        // Maze size input validation (odd number and within range)
-        function validateMazeSizeInput(event) {
-            let value = parseInt(event.target.value);
-            const min = parseInt(event.target.min);
-            const max = parseInt(event.target.max);
-
-            if (isNaN(value)) {
-                event.target.value = event.target.min; // Default to min if not a number
-                return;
-            }
-
-            // Limit value within min/max range
-            value = Math.max(min, Math.min(value, max));
-
-            // If value is even, make it odd (increment by 1 if not max)
-            if (value % 2 === 0) {
-                if (value < max) {
-                    value += 1;
-                } else {
-                    value -= 1; // If max is even and input is max, make it max-1 (odd)
-                }
-            }
-            event.target.value = value;
-        }
-
-        mazeWidthInput.addEventListener('change', validateMazeSizeInput);
-        mazeHeightInput.addEventListener('change', validateMazeSizeInput); // Corrected function name
-
-        // Game initialization on window resize (responsive)
         window.addEventListener('resize', () => {
-            if (mainLayout.style.display === 'flex') { // Only respond if game is displayed
+            if (mainLayout.style.display === 'flex') {
                 initGame();
             }
         });
 
-        // Initial setup: show start screen first and initialize audio
         document.addEventListener('DOMContentLoaded', function() {
+            populateSizeDropdowns();
             showStartScreen();
-            initAudio(); // Initialize audio context
+            initAudio();
         });
     </script>
 </body>
