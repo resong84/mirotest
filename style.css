@@ -1,0 +1,587 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0; /* Remove body padding, handled by main-layout padding */
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent scrolling of the entire window */
+}
+.main-layout {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 600px; /* Max width for the whole game area */
+    height: calc(100vh - 40px); /* Adjust height to fit viewport, considering body padding */
+    box-sizing: border-box;
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Ensure no scrollbars on the main layout itself */
+    padding: 0; /* Remove padding from main-layout, header/footer will have it */
+}
+.game-header {
+    height: 70%; /* 70% of main-layout height */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px; /* Inner padding for canvas */
+    box-sizing: border-box;
+    flex-shrink: 0; /* Prevent header from shrinking */
+}
+.game-footer {
+    height: 30%; /* 30% of main-layout height */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px; /* Gap between elements in footer */
+    padding: 12px; /* Inner padding for controls */
+    box-sizing: border-box;
+    flex-shrink: 0; /* Prevent footer from shrinking */
+    margin-top: auto; /* Push footer to bottom if space allows */
+    overflow-y: auto; /* Allow footer to scroll if its content exceeds 30% */
+}
+canvas {
+    border: 2px solid #333;
+    background-color: #eee;
+    display: block;
+    border-radius: 8px;
+    touch-action: none; /* Prevent default touch actions like scrolling */
+}
+.controls-wrapper { /* Wrapper for all controls (directional + rollback) */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px; /* Space between canvas and controls row */
+    margin-top: 0; /* Managed by footer gap */
+    width: 100%; /* Take full width to center content */
+}
+
+/* --- Control Mode Switching --- */
+.main-layout.mode-keyboard .joystick-controls {
+    display: none;
+}
+.main-layout.mode-joystick .keyboard-controls {
+    display: none;
+}
+.keyboard-controls, .joystick-controls {
+    width: 100%;
+}
+
+/* --- Keyboard Controls --- */
+.main-controls-row { /* Container for left rollback, directional, right rollback */
+    display: flex;
+    align-items: center; /* Vertically center items */
+    justify-content: center; /* Center the groups */
+    width: 100%;
+    margin: 0 auto; /* Center the row itself */
+    gap: 15px; /* MODIFIED: Added gap between control groups */
+}
+.directional-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center the rows */
+    gap: 5px; /* Space between rows */
+    width: 170px; /* Fixed width for the directional block */
+    flex-shrink: 0; /* Prevent shrinking */
+}
+.directional-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px; /* Space between buttons in a row */
+    width: 100%;
+}
+.directional-row.top-row {
+    justify-content: space-between; /* Distribute Q, Up, E */
+    align-items: center;
+    width: 100%;
+    padding: 0 5px; /* Add some padding to prevent Q/E from touching edges */
+    box-sizing: border-box;
+}
+.directional-row.middle-row { /* New row for left, down, right */
+    justify-content: center; /* Center the buttons */
+}
+
+/* --- Joystick Controls (Layout Corrected) --- */
+.joystick-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center the entire control block */
+    gap: 80px; /* Increased gap between left panel and joystick */
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+.joystick-left-panel {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Gap between rollback and Q/E buttons */
+}
+.special-actions-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.joystick-base {
+    width: 80px;
+    height: 80px;
+    background-color: #e0e0e0;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: inset 0 5px 15px rgba(0,0,0,0.2);
+}
+.joystick-knob {
+    width: 60px;
+    height: 60px;
+    background-color: #cccccc; /* Default color */
+    border-radius: 50%;
+    position: absolute;
+    cursor: grab;
+    transition: transform 0.1s ease-out;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+.joystick-knob:active {
+    cursor: grabbing;
+}
+
+
+/* New base class for common button styles */
+.game-button-base {
+    background-color: #FFFFFF;
+    color: #000000;
+    border-radius: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    padding: 0; /* Remove default padding, set by specific classes */
+}
+.game-button-base:hover {
+    background-color: #F0F0F0;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+.game-button-base:active {
+    background-color: #D0D0D0;
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.game-button-base:disabled {
+    background-color: #cccccc;
+    color: #888888;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Specific styles for arrow buttons */
+.arrow-button {
+    width: 50px; /* Fixed width */
+    height: 50px; /* Fixed height for square shape */
+    font-size: 1.8rem; /* Emoji size */
+}
+
+/* Specific styles for Q and E buttons */
+.special-action-button {
+    width: 40px; /* Smaller width */
+    height: 40px; /* Smaller height for square shape */
+    font-size: 1.5rem; /* Smaller font size */
+}
+
+.rollback-group {
+    display: grid; /* Changed to grid for 2x2 layout */
+    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+    grid-template-rows: repeat(2, 1fr);    /* 2 rows */
+    gap: 5px; /* Space between rollback buttons */
+    width: 90px; /* Adjusted width for 2x2 */
+    height: 90px; /* Adjusted height for 2x2 */
+    align-items: center; /* Center buttons within their group */
+    justify-content: center;
+}
+.rollback-button {
+    width: 40px; /* Smaller fixed width */
+    height: 40px; /* Smaller fixed height */
+    border-radius: 8px; /* Slightly more rounded */
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: white; /* Text color for numbers */
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: none; /* Remove default button border */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7); /* Added text shadow for visibility */
+}
+.rollback-button:hover {
+    transform: scale(1.05); /* Slight scale on hover */
+}
+.rollback-button:active {
+    transform: scale(0.95);
+}
+/* Specific colors for rollback buttons (Pastel tones) */
+.rollback-button.red { background-color: #FFB6C1; } /* Pastel Pink */
+.rollback-button.orange { background-color: #FFDAB9; } /* Peach */
+.rollback-button.yellow { background-color: #FFFACD; } /* Lemon Chiffon */
+.rollback-button.green { background-color: #BDECB6; } /* Light Green */
+
+/* Modified .game-info-container to hold buttons and timer */
+.game-info-container {
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Center items horizontally */
+    align-items: center; /* Align items vertically */
+    gap: 15px; /* Space between buttons and timer */
+    margin-top: 0; /* Managed by footer gap */
+}
+.timer-display {
+    font-size: 1.2rem; /* Adjusted timer font size */
+    font-weight: bold;
+    color: #333;
+    background-color: #f0f0f0;
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+.action-button { /* General style for action buttons */
+    background-color: #BDECB6; /* Pastel Green */
+    color: white;
+    padding: 8px 16px; /* Adjusted padding to match timer */
+    border-radius: 12px;
+    font-size: 1.1rem; /* Adjusted font size for better fit */
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.action-button:hover {
+    background-color: #A7D8A0; /* Darker Pastel Green */
+    transform: translateY(-2px);
+}
+.action-button:active {
+    background-color: #92C38A; /* Even Darker Pastel Green */
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.reset-size-button {
+    background-color: #FFB6C1; /* Pastel Pink */
+}
+.reset-size-button:hover {
+    background-color: #FF9AA4; /* Darker Pastel Pink */
+}
+.reset-size-button:active {
+    background-color: #FF7F8C; /* Even Darker Pastel Pink */
+}
+
+.help-button {
+    background-color: #A7C7E7; /* Pastel Blue */
+    color: white;
+    padding: 8px 12px; /* Smaller padding for '?' */
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.help-button:hover {
+    background-color: #92B4D8;
+    transform: translateY(-2px);
+}
+.help-button:active {
+    background-color: #7D9CC9;
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Start Screen Modal Styling */
+.start-screen-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.start-screen-content {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.start-screen-content h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+.maze-size-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+.maze-size-input-group label {
+    font-size: 1.1rem;
+    color: #555;
+}
+.maze-size-input {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+.maze-size-input input {
+    width: 80px;
+    padding: 8px 12px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+    text-align: center;
+    -moz-appearance: textfield; /* Firefox hides arrows */
+}
+.maze-size-input input::-webkit-outer-spin-button,
+.maze-size-input input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.size-limit-text {
+    font-size: 0.9rem;
+    color: #777;
+    margin-top: 5px;
+}
+.start-button {
+    background-color: #4F46E5;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+    margin-top: 10px;
+}
+.start-button:hover {
+    background-color: #4338CA;
+    transform: translateY(-3px);
+}
+.start-button:active {
+    background-color: #3730A3;
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.start-screen-error {
+    color: #EF4444; /* Red-500 */
+    font-size: 0.9rem;
+    margin-top: -10px;
+    display: none;
+}
+
+/* Win Screen Modal Styling */
+.win-modal, .help-modal, .screenshot-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* 50% background blur effect */
+    backdrop-filter: blur(5px); /* Optional: add actual blur if supported */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* Above start screen modal */
+    display: none; /* Hidden by default */
+}
+.win-modal-content, .help-modal-content, .screenshot-modal-content {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    text-align: center; /* Center align content */
+    max-width: 90%;
+    width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+.win-message-line { /* For splitting win message into lines */
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #333;
+    margin: 0; /* Remove default paragraph margins */
+    line-height: 1.2; /* Adjust line height for better spacing */
+}
+#winEmoji { /* Style for the animated emoji */
+    font-size: 6rem; /* Larger emoji */
+    animation: bounce 1s infinite alternate; /* Simple bounce animation */
+}
+@keyframes bounce {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-15px); }
+}
+
+.help-message-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #333;
+}
+.help-message-content {
+    font-size: 1rem;
+    color: #555;
+    text-align: left;
+    line-height: 1.5;
+}
+.fireworks-gif { /* This class is now deprecated for the emoji */
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+.win-modal-buttons { /* New container for win modal buttons */
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    width: 100%;
+}
+#winRestartButton, #shareButton, #closeHelpModalButton, #closeScreenshotModalButton { /* Combined styles */
+    margin-top: 0; /* Managed by parent gap */
+    background-color: #A7C7E7; /* Use pastel blue */
+    padding: 8px 16px; /* Ensure consistent padding */
+    font-size: 1.1rem; /* Ensure consistent font size */
+    border-radius: 12px; /* Ensure consistent border-radius */
+    flex-grow: 1; /* Allow buttons to grow and share space */
+}
+#winRestartButton:hover, #shareButton:hover, #closeHelpModalButton:hover, #closeScreenshotModalButton:hover {
+    background-color: #92B4D8;
+}
+#winRestartButton:active, #shareButton:active, #closeHelpModalButton:active, #closeScreenshotModalButton:active {
+    background-color: #7D9CC9;
+}
+
+/* Screenshot modal specific styles */
+.screenshot-modal-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.screenshot-buttons { /* This class is now deprecated, replaced by win-modal-buttons */
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    width: 100%;
+}
+
+/* Flash effect overlay */
+.flash-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    opacity: 0;
+    z-index: 3000; /* Above all other modals */
+    pointer-events: none; /* Allow clicks to pass through */
+}
+.flash-effect {
+    animation: flash 0.3s ease-out forwards;
+}
+@keyframes flash {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .main-layout {
+        padding: 16px;
+        height: 100vh; /* Full height on mobile */
+    }
+    .game-header {
+        height: 60%; /* Adjust header height for smaller screens */
+    }
+    .game-footer {
+        height: 40%; /* Adjust footer height for smaller screens */
+    }
+    .directional-controls {
+        width: 120px;
+        height: auto; /* Changed to auto for flex layout */
+        gap: 3px;
+    }
+    .arrow-button {
+        width: 45px; /* Smaller square buttons on mobile */
+        height: 45px;
+        font-size: 1.5rem; /* Smaller arrows on smaller screens */
+    }
+    .special-action-button {
+        width: 35px; /* Even smaller Q/E on mobile */
+        height: 35px;
+        font-size: 1.2rem;
+    }
+    .action-button {
+        padding: 8px 16px; /* Match timer padding */
+        font-size: 1rem;
+    }
+    .timer-display {
+        font-size: 1.1rem; /* Slightly smaller timer on mobile */
+        padding: 6px 12px;
+    }
+    .start-screen-content {
+        padding: 20px;
+        gap: 15px;
+    }
+    .start-screen-content h2 {
+        font-size: 1.7rem;
+    }
+    .maze-size-input input {
+        width: 70px;
+        font-size: 0.9rem;
+    }
+    .start-button {
+        padding: 12px 24px;
+        font-size: 1.1rem;
+    }
+    .rollback-button {
+        width: 35px; /* Even smaller on mobile */
+        height: 35px;
+        font-size: 0.8rem;
+    }
+    .main-controls-row {
+        gap: 10px; /* Reduce gap on smaller screens */
+    }
+    .rollback-group {
+        width: 80px; /* Adjust width for smaller rollback buttons */
+        height: 80px; /* Adjust height for smaller rollback buttons */
+    }
+    #winEmoji {
+        font-size: 4rem; /* Smaller emoji on mobile */
+    }
+}
