@@ -225,36 +225,30 @@ function updateTimerDisplay() {
     timerDisplay.textContent = `${mins}분${secs}초${centisecs}`;
 }
 
+// '최대 크기' 계산 로직 (수정됨)
 function calculateAndDisplayMaxMazeSize() {
-    const tempLayout = document.createElement('div');
-    tempLayout.style.width = '100%';
-    tempLayout.style.maxWidth = '600px';
-    tempLayout.style.height = `calc(100vh - 40px)`;
-    tempLayout.style.position = 'fixed';
-    tempLayout.style.visibility = 'hidden';
-    tempLayout.style.display = 'flex';
-    tempLayout.style.flexDirection = 'column';
+    // 실제 브라우저의 가용 너비와 높이를 직접 측정
+    const availableScreenWidth = Math.min(600, window.innerWidth);
+    const availableScreenHeight = window.innerHeight;
 
-    const tempHeader = document.createElement('header');
-    tempHeader.style.height = '75%';
-    tempHeader.style.padding = '12px';
+    // CSS에 정의된 main-layout의 패딩(좌우 0, 상하 40px)을 고려
+    const layoutWidth = availableScreenWidth;
+    const layoutHeight = availableScreenHeight - 40;
 
-    tempLayout.appendChild(tempHeader);
-    document.body.appendChild(tempLayout);
+    // header와 footer의 비율(75%, 25%)과 패딩(12px)을 고려하여 실제 캔버스 영역 계산
+    const headerHeight = layoutHeight * 0.75 - 24;
+    const headerWidth = layoutWidth - 24;
 
     const MINIMUM_VIABLE_TILE_SIZE = 3;
-    const availableWidth = tempHeader.clientWidth;
-    const availableHeight = tempHeader.clientHeight;
     
-    let maxWidth = Math.floor(availableWidth / MINIMUM_VIABLE_TILE_SIZE);
-    let maxHeight = Math.floor(availableHeight / MINIMUM_VIABLE_TILE_SIZE);
+    let maxWidth = Math.floor(headerWidth / MINIMUM_VIABLE_TILE_SIZE);
+    let maxHeight = Math.floor(headerHeight / MINIMUM_VIABLE_TILE_SIZE);
     
+    // 미로 생성 알고리즘에 맞게 크기 조정
     maxWidth = maxWidth - (maxWidth % STEP) + 1;
     maxHeight = maxHeight - (maxHeight % STEP) + 1;
 
     autoFitButton.textContent = `최대 크기 (${maxWidth}x${maxHeight})`;
-    
-    document.body.removeChild(tempLayout);
 }
 
 function showStartScreen() {
@@ -368,7 +362,6 @@ function placeStartEnd() {
     let VIRTUAL_GRID_COLS, VIRTUAL_GRID_ROWS;
     let startBlock, endBlock;
 
-    // 정사각형 미로 로직
     if (MAZE_WIDTH === MAZE_HEIGHT) {
         VIRTUAL_GRID_COLS = 4;
         VIRTUAL_GRID_ROWS = 4;
@@ -391,26 +384,26 @@ function placeStartEnd() {
                 endBlock = { x: 0, y: Math.floor(Math.random() * VIRTUAL_GRID_ROWS) };
                 break;
         }
-    } else { // 직사각형 미로 로직 (수정됨)
-        if (MAZE_WIDTH < MAZE_HEIGHT) { // 세로가 더 긴 경우 -> 위/아래에 배치
+    } else {
+        if (MAZE_WIDTH < MAZE_HEIGHT) {
             VIRTUAL_GRID_COLS = 4;
             VIRTUAL_GRID_ROWS = 8;
             if (Math.random() < 0.5) {
-                startBlock = { x: Math.floor(Math.random() * VIRTUAL_GRID_COLS), y: 0 }; // TOP
-                endBlock = { x: Math.floor(Math.random() * VIRTUAL_GRID_COLS), y: VIRTUAL_GRID_ROWS - 1 }; // BOTTOM
+                startBlock = { x: Math.floor(Math.random() * VIRTUAL_GRID_COLS), y: 0 };
+                endBlock = { x: Math.floor(Math.random() * VIRTUAL_GRID_COLS), y: VIRTUAL_GRID_ROWS - 1 };
             } else {
-                startBlock = { x: Math.floor(Math.random() * VIRTUAL_GRID_COLS), y: VIRTUAL_GRID_ROWS - 1 }; // BOTTOM
-                endBlock = { x: Math.floor(Math.random() * VIRTUAL_GRID_COLS), y: 0 }; // TOP
+                startBlock = { x: Math.floor(Math.random() * VIRTUAL_GRID_COLS), y: VIRTUAL_GRID_ROWS - 1 };
+                endBlock = { x: Math.floor(Math.random() * VIRTUAL_GRID_COLS), y: 0 };
             }
-        } else { // 가로가 더 긴 경우 -> 좌/우에 배치
+        } else {
             VIRTUAL_GRID_COLS = 8;
             VIRTUAL_GRID_ROWS = 4;
             if (Math.random() < 0.5) {
-                startBlock = { x: 0, y: Math.floor(Math.random() * VIRTUAL_GRID_ROWS) }; // LEFT
-                endBlock = { x: VIRTUAL_GRID_COLS - 1, y: Math.floor(Math.random() * VIRTUAL_GRID_ROWS) }; // RIGHT
+                startBlock = { x: 0, y: Math.floor(Math.random() * VIRTUAL_GRID_ROWS) };
+                endBlock = { x: VIRTUAL_GRID_COLS - 1, y: Math.floor(Math.random() * VIRTUAL_GRID_ROWS) };
             } else {
-                startBlock = { x: VIRTUAL_GRID_COLS - 1, y: Math.floor(Math.random() * VIRTUAL_GRID_ROWS) }; // RIGHT
-                endBlock = { x: 0, y: Math.floor(Math.random() * VIRTUAL_GRID_ROWS) }; // LEFT
+                startBlock = { x: VIRTUAL_GRID_COLS - 1, y: Math.floor(Math.random() * VIRTUAL_GRID_ROWS) };
+                endBlock = { x: 0, y: Math.floor(Math.random() * VIRTUAL_GRID_ROWS) };
             }
         }
     }
@@ -702,26 +695,15 @@ function setupEventListeners() {
 
     autoFitButton.addEventListener('click', () => {
         const MINIMUM_VIABLE_TILE_SIZE = 3;
-        const tempLayout = document.createElement('div');
-        tempLayout.style.width = '100%';
-        tempLayout.style.maxWidth = '600px';
-        tempLayout.style.height = `calc(100vh - 40px)`;
-        tempLayout.style.position = 'fixed';
-        tempLayout.style.visibility = 'hidden';
-        tempLayout.style.display = 'flex';
-        tempLayout.style.flexDirection = 'column';
-        const tempHeader = document.createElement('header');
-        tempHeader.style.height = '75%';
-        tempHeader.style.padding = '12px';
-        tempLayout.appendChild(tempHeader);
-        document.body.appendChild(tempLayout);
+        const availableScreenWidth = Math.min(600, window.innerWidth);
+        const availableScreenHeight = window.innerHeight;
+        const layoutWidth = availableScreenWidth;
+        const layoutHeight = availableScreenHeight - 40;
+        const headerHeight = layoutHeight * 0.75 - 24;
+        const headerWidth = layoutWidth - 24;
         
-        const availableWidth = tempHeader.clientWidth;
-        const availableHeight = tempHeader.clientHeight;
-        document.body.removeChild(tempLayout);
-
-        let newWidth = Math.floor(availableWidth / MINIMUM_VIABLE_TILE_SIZE);
-        let newHeight = Math.floor(availableHeight / MINIMUM_VIABLE_TILE_SIZE);
+        let newWidth = Math.floor(headerWidth / MINIMUM_VIABLE_TILE_SIZE);
+        let newHeight = Math.floor(headerHeight / MINIMUM_VIABLE_TILE_SIZE);
         
         newWidth = newWidth - (newWidth % STEP) + 1;
         newHeight = newHeight - (newHeight % STEP) + 1;
